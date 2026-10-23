@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f4f3ed">
+    <title>Add Student</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="../app.css" rel="stylesheet">
+    <script>document.documentElement.classList.add('auth-pending');</script>
+    <script src="../app.js" defer></script>
+</head>
+<body data-requires-auth="true">
+    <nav class="navbar site-navbar">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M8 7h8M8 11h6" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"/></svg>
+                </span>
+                Student System
+            </a>
+            <a class="nav-link ms-auto" href="view_students.html">View students</a>
+        </div>
+    </nav>
+    <main class="container page-shell">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-9 col-xl-8">
+        <section class="card surface-card">
+            <div class="card-body">
+        <p class="eyebrow">Student records</p>
+        <h1 class="section-title mb-2">Add student</h1>
+        <p class="text-secondary mb-4">Add student details to the directory.</p>
+
+        <form class="row g-3"
+            id="student-form"
+            action="http://localhost:8081/student-registration-system/api/Student_Management/add_student.php"
+            method="post"
+            enctype="multipart/form-data"
+            novalidate
+        >
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="name">Name</label>
+                <input class="form-control" type="text" id="name" name="name" maxlength="100" required>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="email">Email</label>
+                <input class="form-control" type="email" id="email" name="email" maxlength="100" required>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="phone">Phone number</label>
+                <input class="form-control" type="tel" id="phone" name="phone" maxlength="15" required>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="address">Address</label>
+                <textarea class="form-control" id="address" name="address" required></textarea>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="profile-picture">Profile picture (optional, max 5 MB)</label>
+                <input
+                    class="form-control"
+                    type="file"
+                    id="profile-picture"
+                    name="profile_picture"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                >
+            </div>
+
+            <div class="col-12">
+                <p id="validation-message" class="alert alert-warning status-message mb-0" role="status" aria-live="polite"></p>
+            </div>
+            <div class="col-12">
+                <button class="btn btn-primary btn-lg w-100 w-sm-auto" type="submit">Add student</button>
+            </div>
+        </form>
+
+        <p id="form-message" class="alert alert-info status-message mt-3 mb-0" role="status" aria-live="polite"></p>
+            </div>
+        </section>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const form = document.getElementById('student-form');
+        const validationMessage = document.getElementById('validation-message');
+        const formMessage = document.getElementById('form-message');
+        const pictureInput = document.getElementById('profile-picture');
+        const apiHost = window.location.hostname || 'localhost';
+        form.action = `http://${apiHost}:8081/student-registration-system/api/Student_Management/add_student.php`;
+        const validationApiUrl = `http://${apiHost}:8081/student-registration-system/api/Student_Management/validate_student.php`;
+        let validationTimer;
+        let validationSequence = 0;
+
+        async function validateFields(sequence) {
+            const fields = [...form.querySelectorAll('[required]')];
+            const data = Object.fromEntries(fields.map((field) => [field.name, field.value]));
+            let response;
+            try {
+                response = await fetch(validationApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    credentials: 'include'
+                });
+            } catch (error) {
+                if (sequence === validationSequence) {
+                    validationMessage.textContent = `Could not connect to the validation API: ${error.message}`;
+                }
+                return false;
+            }
+
+            let result;
+            try {
+                result = await response.json();
+            } catch (error) {
+                if (sequence === validationSequence) {
+                    validationMessage.textContent = `The validation API returned an invalid response (HTTP ${response.status}).`;
+                }
+                return false;
+            }
+
+            if (sequence !== validationSequence) {
+                return false;
+            }
+
+            if (!response.ok || !result.success) {
+                validationMessage.textContent = result.message || `Validation failed (HTTP ${response.status}).`;
+                return false;
+            }
+
+            if (pictureInput.files[0] && pictureInput.files[0].size > 5 * 1024 * 1024) {
+                validationMessage.textContent = 'The profile picture must not exceed 5 MB.';
+                return false;
+            }
+
+            validationMessage.textContent = result.message;
+            return true;
+        }
+
+        function scheduleValidation() {
+            window.clearTimeout(validationTimer);
+            const sequence = ++validationSequence;
+            validationTimer = window.setTimeout(() => validateFields(sequence), 300);
+        }
+
+        form.addEventListener('input', scheduleValidation);
+        form.addEventListener('change', scheduleValidation);
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            window.clearTimeout(validationTimer);
+            const sequence = ++validationSequence;
+
+            if (!await validateFields(sequence) || sequence !== validationSequence || !form.reportValidity()) {
+                return;
+            }
+
+            formMessage.textContent = 'Adding student...';
+
+            let response;
+            try {
+                response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    credentials: 'include'
+                });
+            } catch (error) {
+                formMessage.textContent = `Could not connect to the API: ${error.message}`;
+                return;
+            }
+
+            const responseText = await response.text();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (error) {
+                formMessage.textContent = `The add-student request to ${response.url} returned a non-JSON response (HTTP ${response.status}). Open this page at http://localhost:8081/student-registration-system/pages/add_student.html.`;
+                return;
+            }
+
+            if (response.ok && result.success) {
+                window.location.assign(new URL('view_students.html?created=1', window.location.href));
+            } else {
+                formMessage.textContent = result.message || `Could not add student (HTTP ${response.status}).`;
+            }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

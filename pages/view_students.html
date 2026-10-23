@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f4f3ed">
+    <title>View Students</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="../app.css" rel="stylesheet">
+    <script>document.documentElement.classList.add('auth-pending');</script>
+    <script src="../app.js" defer></script>
+</head>
+<body data-requires-auth="true">
+    <nav class="navbar site-navbar">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M8 7h8M8 11h6" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"/></svg>
+                </span>
+                Student System
+            </a>
+            <div class="d-flex gap-2 ms-auto">
+                <a class="btn btn-outline-secondary btn-sm" href="index.html">Home</a>
+                <a class="btn btn-primary btn-sm" href="add_student.html">Add student</a>
+            </div>
+        </div>
+    </nav>
+    <main class="container page-shell">
+        <section class="card surface-card">
+            <div class="card-body">
+        <p class="eyebrow">Student records</p>
+        <h1 class="section-title mb-4">Students</h1>
+
+        <form class="row g-2 align-items-end mb-4" id="search-form" role="search">
+            <div class="col-12 col-md">
+                <label class="form-label" for="search">Search by name, email, or phone</label>
+                <input class="form-control" type="search" id="search" name="search">
+            </div>
+            <div class="col-6 col-md-auto">
+                <button class="btn btn-primary w-100" type="submit">Search</button>
+            </div>
+            <div class="col-6 col-md-auto">
+                <button class="btn btn-outline-secondary w-100" type="button" id="clear-search">Clear</button>
+            </div>
+        </form>
+
+        <p id="page-message" class="alert alert-info status-message" role="status" aria-live="polite"></p>
+        <div class="table-responsive" id="students-container"></div>
+        <nav class="d-flex justify-content-center mt-4" id="pagination" aria-label="Student pages"></nav>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const apiHost = window.location.hostname || 'localhost';
+        const apiBaseUrl = `http://${apiHost}:8081/student-registration-system/api/Student_Management/`;
+        const projectBaseUrl = `http://${apiHost}:8081/student-registration-system/`;
+        const apiUrl = new URL('view_students.php', apiBaseUrl);
+        const deleteApiUrl = new URL('delete_student.php', apiBaseUrl);
+        const searchForm = document.getElementById('search-form');
+        const searchInput = document.getElementById('search');
+        const studentsContainer = document.getElementById('students-container');
+        const pageMessage = document.getElementById('page-message');
+        const pagination = document.getElementById('pagination');
+        let currentPage = Number(new URLSearchParams(window.location.search).get('page')) || 1;
+        let searchTimer;
+        const initialParams = new URLSearchParams(window.location.search);
+        let initialNotice = initialParams.get('created') === '1'
+            ? 'Student added successfully.'
+            : initialParams.get('updated') === '1'
+                ? 'Student updated successfully.'
+                : '';
+
+        function createCell(row, value) {
+            const cell = document.createElement('td');
+            cell.textContent = value == null ? '' : String(value);
+            row.appendChild(cell);
+            return cell;
+        }
+
+        function renderStudents(students) {
+            studentsContainer.replaceChildren();
+
+            if (students.length === 0) {
+                studentsContainer.textContent = 'No students found.';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'table table-hover align-middle students-table mb-0';
+            const header = document.createElement('tr');
+            header.className = 'table-light';
+            ['Picture', 'Name', 'Email', 'Phone', 'Address', 'Actions'].forEach((label) => {
+                const cell = document.createElement('th');
+                cell.scope = 'col';
+                cell.textContent = label;
+                header.appendChild(cell);
+            });
+            const thead = document.createElement('thead');
+            thead.appendChild(header);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            students.forEach((student) => {
+                const row = document.createElement('tr');
+                const pictureCell = document.createElement('td');
+                if (student.profile_picture) {
+                    const picture = document.createElement('img');
+                    picture.src = new URL(student.profile_picture, projectBaseUrl).href;
+                    picture.alt = `Profile picture of ${student.name}`;
+                    picture.className = 'student-picture';
+                    pictureCell.appendChild(picture);
+                } else {
+                    const placeholder = document.createElement('span');
+                    placeholder.className = 'student-picture-placeholder';
+                    placeholder.setAttribute('role', 'img');
+                    placeholder.setAttribute('aria-label', 'No profile picture');
+                    placeholder.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><path d="m5 17 4.5-4 3 2.5 2.5-2 4 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>';
+                    pictureCell.appendChild(placeholder);
+                }
+                row.appendChild(pictureCell);
+
+                createCell(row, student.name);
+                createCell(row, student.email);
+                createCell(row, student.phone);
+                createCell(row, student.address);
+
+                const actions = document.createElement('td');
+                const editLink = document.createElement('a');
+                editLink.className = 'btn btn-sm btn-outline-secondary me-2';
+                editLink.href = `update_student.html?id=${encodeURIComponent(student.id)}`;
+                editLink.textContent = 'Edit';
+                actions.appendChild(editLink);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'btn btn-sm btn-outline-danger';
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', () => deleteStudent(student.id));
+                actions.appendChild(deleteButton);
+                row.appendChild(actions);
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            studentsContainer.appendChild(table);
+        }
+
+        function renderPagination(data) {
+            pagination.replaceChildren();
+            const previous = document.createElement('button');
+            previous.type = 'button';
+            previous.className = 'btn btn-outline-secondary btn-sm';
+            previous.textContent = 'Previous';
+            previous.disabled = !data.has_previous;
+            previous.addEventListener('click', () => loadStudents(currentPage - 1));
+            pagination.appendChild(previous);
+
+            const pageLabel = document.createElement('span');
+            pageLabel.className = 'align-self-center mx-3 text-secondary small';
+            const totalPages = Math.max(data.total_pages, 1);
+            pageLabel.textContent = ` Page ${data.page} of ${totalPages} (${data.total} students) `;
+            pagination.appendChild(pageLabel);
+
+            const next = document.createElement('button');
+            next.type = 'button';
+            next.className = 'btn btn-outline-secondary btn-sm';
+            next.textContent = 'Next';
+            next.disabled = !data.has_next;
+            next.addEventListener('click', () => loadStudents(currentPage + 1));
+            pagination.appendChild(next);
+        }
+
+        async function loadStudents(page) {
+            currentPage = Math.max(1, page);
+            pageMessage.textContent = 'Loading students...';
+            const params = new URLSearchParams({
+                page: String(currentPage),
+                search: searchInput.value.trim()
+            });
+
+            let response;
+            try {
+                const requestUrl = new URL(apiUrl);
+                requestUrl.search = params.toString();
+                response = await fetch(requestUrl, { credentials: 'include' });
+            } catch (error) {
+                pageMessage.textContent = `Could not connect to the students API: ${error.message}. Open this page through the XAMPP project URL.`;
+                return;
+            }
+
+            const responseText = await response.text();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (error) {
+                pageMessage.textContent = `The students API at ${response.url} returned a non-JSON response (HTTP ${response.status}): ${responseText.slice(0, 160)}`;
+                return;
+            }
+
+            if (!response.ok || !result.success) {
+                pageMessage.textContent = result.message || `Could not load students (HTTP ${response.status}).`;
+                return;
+            }
+
+            if (result.total_pages > 0 && currentPage > result.total_pages) {
+                loadStudents(result.total_pages);
+                return;
+            }
+
+            currentPage = result.page;
+            pageMessage.textContent = initialNotice;
+            initialNotice = '';
+            renderStudents(result.data);
+            renderPagination(result);
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', String(currentPage));
+            if (searchInput.value.trim()) {
+                url.searchParams.set('search', searchInput.value.trim());
+            } else {
+                url.searchParams.delete('search');
+            }
+            window.history.replaceState({}, '', url);
+        }
+
+        async function deleteStudent(id) {
+            if (!window.confirm('Are you sure you want to delete this student?')) {
+                return;
+            }
+
+            pageMessage.textContent = 'Deleting student...';
+            let response;
+            try {
+                const requestUrl = new URL(deleteApiUrl);
+                requestUrl.searchParams.set('id', id);
+                response = await fetch(requestUrl, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+            } catch (error) {
+                pageMessage.textContent = `Could not connect to the delete API: ${error.message}`;
+                return;
+            }
+
+            const responseText = await response.text();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (error) {
+                pageMessage.textContent = `The delete API at ${response.url} returned a non-JSON response (HTTP ${response.status}): ${responseText.slice(0, 160)}`;
+                return;
+            }
+
+            if (response.ok && result.success) {
+                await loadStudents(currentPage);
+                pageMessage.textContent = result.message || 'Student deleted successfully.';
+            } else {
+                pageMessage.textContent = result.message || `Could not delete student (HTTP ${response.status}).`;
+            }
+        }
+
+        searchForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            loadStudents(1);
+        });
+
+        searchInput.addEventListener('input', () => {
+            window.clearTimeout(searchTimer);
+            searchTimer = window.setTimeout(() => loadStudents(1), 300);
+        });
+
+        document.getElementById('clear-search').addEventListener('click', () => {
+            searchInput.value = '';
+            loadStudents(1);
+        });
+
+        searchInput.value = initialParams.get('search') || '';
+        loadStudents(currentPage);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

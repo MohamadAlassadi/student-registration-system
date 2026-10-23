@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f4f3ed">
+    <title>Update Student</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="../app.css" rel="stylesheet">
+    <script>document.documentElement.classList.add('auth-pending');</script>
+    <script src="../app.js" defer></script>
+</head>
+<body data-requires-auth="true">
+    <nav class="navbar site-navbar">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M8 7h8M8 11h6" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"/></svg>
+                </span>
+                Student System
+            </a>
+            <a class="nav-link ms-auto" href="view_students.html">View students</a>
+        </div>
+    </nav>
+    <main class="container page-shell">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-9 col-xl-8">
+        <section class="card surface-card">
+            <div class="card-body">
+        <p class="eyebrow">Student records</p>
+        <h1 class="section-title mb-2">Update student</h1>
+        <p class="text-secondary mb-4">Edit the student's information below.</p>
+
+        <form class="row g-3" id="student-form" method="post" enctype="multipart/form-data" novalidate>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="name">Name</label>
+                <input class="form-control" type="text" id="name" name="name" maxlength="100" required>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="email">Email</label>
+                <input class="form-control" type="email" id="email" name="email" maxlength="100" required>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="phone">Phone number</label>
+                <input class="form-control" type="tel" id="phone" name="phone" maxlength="15" required>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="address">Address</label>
+                <textarea class="form-control" id="address" name="address" required></textarea>
+            </div>
+
+            <div class="col-12">
+                <p class="form-label mb-2">Current profile picture</p>
+                <img class="student-picture" id="current-picture" alt="Current student profile picture" width="100" hidden>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="profile-picture">Replace profile picture (optional, max 5 MB)</label>
+                <input
+                    class="form-control"
+                    type="file"
+                    id="profile-picture"
+                    name="profile_picture"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                >
+            </div>
+
+            <div class="col-12">
+                <p id="validation-message" class="alert alert-warning status-message mb-0" role="status" aria-live="polite"></p>
+            </div>
+            <div class="col-12">
+                <button class="btn btn-primary btn-lg w-100" type="submit">Save changes</button>
+            </div>
+        </form>
+
+        <p id="form-message" class="alert alert-info status-message mt-3 mb-0" role="status" aria-live="polite"></p>
+            </div>
+        </section>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const apiHost = window.location.hostname || 'localhost';
+        const apiBaseUrl = `http://${apiHost}:8081/student-registration-system/api/Student_Management/`;
+        const projectBaseUrl = `http://${apiHost}:8081/student-registration-system/`;
+        const apiUrl = new URL('update_student.php', apiBaseUrl);
+        const studentApiUrl = new URL('view_student.php', apiBaseUrl);
+        const studentId = new URLSearchParams(window.location.search).get('id');
+        const form = document.getElementById('student-form');
+        const formMessage = document.getElementById('form-message');
+        const validationMessage = document.getElementById('validation-message');
+        const emailInput = document.getElementById('email');
+        const pictureInput = document.getElementById('profile-picture');
+        const currentPicture = document.getElementById('current-picture');
+
+        function validateFields() {
+            const emptyFields = [...form.querySelectorAll('[required]')]
+                .filter((field) => field.value.trim() === '');
+
+            if (emptyFields.length > 0) {
+                validationMessage.textContent = 'Please fill in all required fields.';
+                return false;
+            }
+
+            if (!emailInput.validity.valid) {
+                validationMessage.textContent = 'Enter a valid email address.';
+                return false;
+            }
+
+            if (pictureInput.files[0] && pictureInput.files[0].size > 5 * 1024 * 1024) {
+                validationMessage.textContent = 'The profile picture must not exceed 5 MB.';
+                return false;
+            }
+
+            validationMessage.textContent = '';
+            return true;
+        }
+
+        async function loadStudent() {
+            if (!studentId || !/^[1-9]\d*$/.test(studentId)) {
+                formMessage.textContent = 'A valid student ID is required in the page URL.';
+                form.querySelector('button[type="submit"]').disabled = true;
+                return;
+            }
+
+            let response;
+            try {
+                const requestUrl = new URL(studentApiUrl);
+                requestUrl.searchParams.set('id', studentId);
+                response = await fetch(requestUrl, { credentials: 'include' });
+            } catch (error) {
+                formMessage.textContent = `Could not load student data: ${error.message}`;
+                return;
+            }
+
+            let result;
+            try {
+                result = await response.json();
+            } catch (error) {
+                formMessage.textContent = `The server returned an unexpected response (HTTP ${response.status}).`;
+                return;
+            }
+
+            if (!response.ok || !result.success) {
+                formMessage.textContent = result.message || `Could not load student (HTTP ${response.status}).`;
+                form.querySelector('button[type="submit"]').disabled = true;
+                return;
+            }
+
+            const student = result.data;
+            form.elements.name.value = student.name;
+            form.elements.email.value = student.email;
+            form.elements.phone.value = student.phone;
+            form.elements.address.value = student.address;
+
+            if (student.profile_picture) {
+                currentPicture.src = new URL(student.profile_picture, projectBaseUrl).href;
+                currentPicture.hidden = false;
+            }
+            formMessage.textContent = '';
+        }
+
+        form.addEventListener('input', validateFields);
+        form.addEventListener('change', validateFields);
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            if (!validateFields() || !form.reportValidity() || !studentId) {
+                return;
+            }
+
+            const formData = new FormData(form);
+            formData.append('id', studentId);
+            formMessage.textContent = 'Saving changes...';
+
+            let response;
+            try {
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+            } catch (error) {
+                formMessage.textContent = `Could not connect to the update API: ${error.message}`;
+                return;
+            }
+
+            let result;
+            try {
+                result = await response.json();
+            } catch (error) {
+                formMessage.textContent = `The server returned an unexpected response (HTTP ${response.status}).`;
+                return;
+            }
+
+            if (response.ok && result.success) {
+                window.location.assign(new URL('view_students.html?updated=1', window.location.href));
+            } else {
+                formMessage.textContent = result.message || `Could not update student (HTTP ${response.status}).`;
+            }
+        });
+
+        loadStudent();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

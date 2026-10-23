@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f4f3ed">
+    <title>Student Registration System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="../app.css" rel="stylesheet">
+    <script>document.documentElement.classList.add('auth-pending');</script>
+    <script src="../app.js" defer></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg site-navbar sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                        <path d="M8 7h8M8 11h6" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"/>
+                    </svg>
+                </span>
+                Student System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-navigation" aria-controls="main-navigation" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="main-navigation">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                    <li class="nav-item" data-authenticated-only hidden><a class="nav-link" href="view_students.html">Students</a></li>
+                    <li class="nav-item" data-guest-only><a class="nav-link" href="login.html">Login</a></li>
+                    <li class="nav-item" data-guest-only><a class="btn btn-primary btn-sm px-3 ms-lg-2" href="register.html">Create account</a></li>
+                    <li class="nav-item text-secondary small px-lg-2" id="account-status" data-authenticated-only hidden></li>
+                    <li class="nav-item" data-authenticated-only hidden><button class="btn btn-outline-secondary btn-sm" id="logout-button" type="button" hidden>Log out</button></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container home-shell page-shell">
+        <section class="home-hero" aria-labelledby="home-title">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-7">
+                    <div class="hero-content">
+                        <p class="hero-kicker mb-0">Student records, made simple</p>
+                                    <h1 class="display-title" id="home-title">A clearer way to manage student records.</h1>
+                                    <p class="hero-copy mb-0">Find, update, and organize student information in one calm, easy-to-use place.</p>
+                        <div class="hero-actions">
+                            <a class="btn btn-primary btn-lg px-4" href="view_students.html" data-authenticated-only hidden>
+                                Open student directory <span aria-hidden="true">&rarr;</span>
+                            </a>
+                            <a class="btn btn-primary btn-lg px-4" href="login.html" data-guest-only>
+                                Sign in to get started <span aria-hidden="true">&rarr;</span>
+                            </a>
+                            <a class="btn btn-outline-light btn-lg px-4" href="add_student.html" data-authenticated-only hidden>Add a student</a>
+                            <a class="btn btn-outline-light btn-lg px-4" href="register.html" data-guest-only>Create an account</a>
+                        </div>
+                        <p class="status-message mt-3 mb-0" id="account-message" role="status" aria-live="polite"></p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-5">
+                    <div class="hero-art" aria-hidden="true">
+                        <div class="art-spark"></div>
+                        <div class="record-stack">
+                            <div class="record-icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                                </svg>
+                            </div>
+                            <h2>Student directory</h2>
+                            <p>All the important details, together in one place.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="feature-row" aria-label="What you can do">
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8v6m3-3h-6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                    </svg>
+                </span>
+                <div>
+                    <h2>Simple registration</h2>
+                    <p>Add the details you need in a clear, straightforward form.</p>
+                </div>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="m16 16 4 4M8 11h6" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>
+                    </svg>
+                </span>
+                <div>
+                    <h2>Find what you need</h2>
+                    <p>Search the directory by student name, email, or phone.</p>
+                </div>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                    </svg>
+                </span>
+                <div>
+                    <h2>Keep records current</h2>
+                    <p>Update student information whenever things change.</p>
+                </div>
+            </article>
+        </section>
+        <p class="home-note"><span aria-hidden="true">✦</span> Less time organizing. More time supporting students.</p>
+    </main>
+
+    <footer class="container page-footer pb-4 text-center">Student Registration System</footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
